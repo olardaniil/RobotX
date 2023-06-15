@@ -40,9 +40,16 @@ int distance = 0;
 bool _start = false;
 bool _roadStartToRoom_1 = false;
 bool _room_1_step_1 = false;
-bool _exit_room_1_step_1 = false;
+bool _room_1_step_1_exit = false;
+bool _room_1_step_2_exit = false;
+bool _toStart = false;
+
+bool _toRoom_4 = false;
+
 bool _room_1_step_2 = false;
-bool _road_Room_1_To_Road_4_step_1 = true;
+bool _road_Room_1_To_Road_4_step_1 = false;
+
+bool _isGrabBank = false;
 
 // Функция для инициализации робота 
 void setup() {
@@ -126,20 +133,20 @@ void drivingAlongTheLine() {
 // Обратная езда по линии по трём датчикам
 void reverseDrivingAlongTheLine() {
   if (lineSensorLC == 1 && lineSensorC == 0 && lineSensorRC == 0) {
-    setMotorSpeed(motorLeft_PWM_PIN, motorLeft_DIR_PIN, -speedMax);
-    setMotorSpeed(motorRight_PWM_PIN, motorRight_DIR_PIN, -speedMin);
-  }
-  if (lineSensorLC == 1  && lineSensorC == 1 && lineSensorRC == 0) {
-    setMotorSpeed(motorLeft_PWM_PIN, motorLeft_DIR_PIN, -speedMax);
-    setMotorSpeed(motorRight_PWM_PIN, motorRight_DIR_PIN, -speedMidle);
-  }
-  if (lineSensorLC == 0 && lineSensorC == 0 && lineSensorRC == 1) {
     setMotorSpeed(motorLeft_PWM_PIN, motorLeft_DIR_PIN, -speedMin);
     setMotorSpeed(motorRight_PWM_PIN, motorRight_DIR_PIN, -speedMax);
   }
-  if (lineSensorLC == 0 && lineSensorC == 1 && lineSensorRC == 1) {
+  if (lineSensorLC == 1  && lineSensorC == 1 && lineSensorRC == 0) {
     setMotorSpeed(motorLeft_PWM_PIN, motorLeft_DIR_PIN, -speedMidle);
     setMotorSpeed(motorRight_PWM_PIN, motorRight_DIR_PIN, -speedMax);
+  }
+  if (lineSensorLC == 0 && lineSensorC == 0 && lineSensorRC == 1) {
+    setMotorSpeed(motorLeft_PWM_PIN, motorLeft_DIR_PIN, -speedMax);
+    setMotorSpeed(motorRight_PWM_PIN, motorRight_DIR_PIN, -speedMin);
+  }
+  if (lineSensorLC == 0 && lineSensorC == 1 && lineSensorRC == 1) {
+    setMotorSpeed(motorLeft_PWM_PIN, motorLeft_DIR_PIN, -speedMax);
+    setMotorSpeed(motorRight_PWM_PIN, motorRight_DIR_PIN, -speedMin);
   }
   if (lineSensorLC == 0 && lineSensorC == 0 && lineSensorRC == 0) {
     setMotorSpeed(motorLeft_PWM_PIN, motorLeft_DIR_PIN, -speedMin);
@@ -190,12 +197,13 @@ void putBank() {
 void start() {
   setMotorSpeed(motorLeft_PWM_PIN, motorLeft_DIR_PIN, speedMin);
   setMotorSpeed(motorRight_PWM_PIN, motorRight_DIR_PIN, speedMin);
-  delay(3000);
+  delay(3200);
   _start = false;
   _roadStartToRoom_1 = true;
 }
 // Перемещение | Старт >>> Комната 1
 void roadStartToRoom_1() {
+  readSensor();
   drivingAlongTheLine();
   if (lineSensorL == 1 && lineSensorC == 0 && lineSensorR == 0) {
     stop();
@@ -224,74 +232,284 @@ void room_1_step_1() {
   if (10 < distance && distance <= 14) {
     stop();
     grabBank();
-    _room_1_step_1 = false;
-    _exit_room_1_step_1 = true;
+    _isGrabBank = true;
   }
   if (_room_1_step_1 == true) {
     if (lineSensorLC == 1 && lineSensorC == 1 && lineSensorRC == 1) {
       stop();
-      while (lineSensorLC != 0) {
-        readSensor();
-        setMotorSpeed(motorLeft_PWM_PIN, motorLeft_DIR_PIN, speedMax);
-        setMotorSpeed(motorRight_PWM_PIN, motorRight_DIR_PIN, 0);
+      if (_isGrabBank == true) {
+        while (lineSensorL != 0) {
+          readSensor();
+          setMotorSpeed(motorLeft_PWM_PIN, motorLeft_DIR_PIN, speedMidle);
+          setMotorSpeed(motorRight_PWM_PIN, motorRight_DIR_PIN, -(speedMidle+5));
+        }
+        while (lineSensorL != 1) {
+          readSensor();
+          setMotorSpeed(motorLeft_PWM_PIN, motorLeft_DIR_PIN, speedMidle);
+          setMotorSpeed(motorRight_PWM_PIN, motorRight_DIR_PIN, -(speedMidle+5));
+        }
+        while (lineSensorLC != 0) {
+          readSensor();
+          setMotorSpeed(motorLeft_PWM_PIN, motorLeft_DIR_PIN, speedMidle);
+          setMotorSpeed(motorRight_PWM_PIN, motorRight_DIR_PIN, -(speedMidle+5));
+        }
+        drivingAlongTheLine();
+        _room_1_step_1 = false;
+        _room_1_step_1_exit = true;
       }
-      stop();
-      _room_1_step_1 = false;
-      _room_1_step_2 = true;
+      else {
+        while(lineSensorL != 0) {
+          readSensor();
+          setMotorSpeed(motorLeft_PWM_PIN, motorLeft_DIR_PIN, speedMidle);
+          setMotorSpeed(motorRight_PWM_PIN, motorRight_DIR_PIN, -speedMidle);
+        }
+        stop();
+        while(lineSensorRC != 0) {
+          readSensor();
+          setMotorSpeed(motorLeft_PWM_PIN, motorLeft_DIR_PIN, speedMidle);
+          setMotorSpeed(motorRight_PWM_PIN, motorRight_DIR_PIN, speedMidle);
+        }
+        stop();
+        _room_1_step_1 = false;
+        _room_1_step_2 = true;
+      }
     }
     else {
       drivingAlongTheLine();
     }
   }
 }
-// Перемещение | Комната 1 | Участок 1 | Выход
-void exit_room_1_step_1() {
+void room_1_step_1_exit() {
   if (lineSensorLC == 1 && lineSensorC == 1 && lineSensorRC == 1) {
-    stop();
-    while (lineSensorR != 0) {
+    while(lineSensorR != 0) {
       readSensor();
-      setMotorSpeed(motorLeft_PWM_PIN, motorLeft_DIR_PIN, 0);
-      setMotorSpeed(motorRight_PWM_PIN, motorRight_DIR_PIN, speedMax);
-    }
-    while (lineSensorR != 1) {
-      readSensor();
-      setMotorSpeed(motorLeft_PWM_PIN, motorLeft_DIR_PIN, 0);
-      setMotorSpeed(motorRight_PWM_PIN, motorRight_DIR_PIN, speedMax);
-    }
-    while (lineSensorR != 0) {
-      readSensor();
-      setMotorSpeed(motorLeft_PWM_PIN, motorLeft_DIR_PIN, 0);
-      setMotorSpeed(motorRight_PWM_PIN, motorRight_DIR_PIN, speedMax);
-    }
-    while (lineSensorR != 1) {
-      readSensor();
-      setMotorSpeed(motorLeft_PWM_PIN, motorLeft_DIR_PIN, 0);
-      setMotorSpeed(motorRight_PWM_PIN, motorRight_DIR_PIN, speedMax);
-    }
-    while (lineSensorRC != 0) {
-      readSensor();
-      setMotorSpeed(motorLeft_PWM_PIN, motorLeft_DIR_PIN, 0);
-      setMotorSpeed(motorRight_PWM_PIN, motorRight_DIR_PIN, speedMax);
+      setMotorSpeed(motorLeft_PWM_PIN, motorLeft_DIR_PIN, -speedMidle);
+      setMotorSpeed(motorRight_PWM_PIN, motorRight_DIR_PIN, speedMidle);
     }
     stop();
-    _exit_room_1_step_1 = false;
-    _road_Room_1_To_Road_4_step_1 = true;
+    while(lineSensorLC != 0) {
+      readSensor();
+      setMotorSpeed(motorLeft_PWM_PIN, motorLeft_DIR_PIN, speedMidle);
+      setMotorSpeed(motorRight_PWM_PIN, motorRight_DIR_PIN, speedMidle);
+    }
+    stop();
+    _room_1_step_1_exit = false;
+    _toStart = true;
   }
   else {
-    reverseDrivingAlongTheLine();
+    drivingAlongTheLine();
   }
 }
-// Перемещение | Комната 1 >>> Комната 4 | Участок 1
-void road_Room_1_To_Road_4_step_1() {
+// Перемещение | Комната 1 | Участок 2
+void room_1_step_2() {
+  if (10 < distance && distance <= 14) {
+    stop();
+    grabBank();
+    _isGrabBank = true;
+  }
+  if (_isGrabBank == true) {
+    while (lineSensorL != 0) {
+          readSensor();
+          setMotorSpeed(motorLeft_PWM_PIN, motorLeft_DIR_PIN, speedMidle);
+          setMotorSpeed(motorRight_PWM_PIN, motorRight_DIR_PIN, -(speedMidle+5));
+        }
+        while (lineSensorL != 1) {
+          readSensor();
+          setMotorSpeed(motorLeft_PWM_PIN, motorLeft_DIR_PIN, speedMidle);
+          setMotorSpeed(motorRight_PWM_PIN, motorRight_DIR_PIN, -(speedMidle+5));
+        }
+        while (lineSensorLC != 0) {
+          readSensor();
+          setMotorSpeed(motorLeft_PWM_PIN, motorLeft_DIR_PIN, speedMidle);
+          setMotorSpeed(motorRight_PWM_PIN, motorRight_DIR_PIN, -(speedMidle+5));
+        }
+        drivingAlongTheLine();
+    _room_1_step_2 = false;
+    // _room_1_step_2_exit = true;
+  }
+  else {
+    drivingAlongTheLine();
+  }
+}
+// 
+void room_1_step_2_exit() {
+  readSensor();
   drivingAlongTheLine();
+  if (lineSensorL == 0 && lineSensorC == 0 && lineSensorR == 1) {
+    stop();
+    delay(200);
+    while(lineSensorR != 0) {
+      readSensor();
+      setMotorSpeed(motorLeft_PWM_PIN, motorLeft_DIR_PIN, speedMax);
+      setMotorSpeed(motorRight_PWM_PIN, motorRight_DIR_PIN, 0);
+    }
+    while(lineSensorR != 1) {
+      readSensor();
+      setMotorSpeed(motorLeft_PWM_PIN, motorLeft_DIR_PIN, speedMax);
+      setMotorSpeed(motorRight_PWM_PIN, motorRight_DIR_PIN, 0);
+    }
+    while(lineSensorRC != 0) {
+      readSensor();
+      setMotorSpeed(motorLeft_PWM_PIN, motorLeft_DIR_PIN, speedMax);
+      setMotorSpeed(motorRight_PWM_PIN, motorRight_DIR_PIN, 0);
+    }
+    stop();
+    _room_1_step_2_exit = false;
+  }
+}
+// 
+void toRoom_4() {
+  // Едем до главного перекрестка
+  while(lineSensorL != 0 && lineSensorC != 0 && lineSensorR != 0) {
+    readSensor();
+    drivingAlongTheLine();
+  }
+  stop();
+  // // Поворачиваем налево
+  // while(lineSensorR != 1) {
+  //   readSensor();
+  //   setMotorSpeed(motorLeft_PWM_PIN, motorLeft_DIR_PIN, 0);
+  //   setMotorSpeed(motorRight_PWM_PIN, motorRight_DIR_PIN, speedMax);
+  // }
+  // while(lineSensorR != 0) {
+  //   readSensor();
+  //   setMotorSpeed(motorLeft_PWM_PIN, motorLeft_DIR_PIN, 0);
+  //   setMotorSpeed(motorRight_PWM_PIN, motorRight_DIR_PIN, speedMax);
+  // }
+  // while(lineSensorR != 1) {
+  //   readSensor();
+  //   setMotorSpeed(motorLeft_PWM_PIN, motorLeft_DIR_PIN, 0);
+  //   setMotorSpeed(motorRight_PWM_PIN, motorRight_DIR_PIN, speedMax);
+  // }
+  // while(lineSensorRC != 0) {
+  //   readSensor();
+  //   setMotorSpeed(motorLeft_PWM_PIN, motorLeft_DIR_PIN, 0);
+  //   setMotorSpeed(motorRight_PWM_PIN, motorRight_DIR_PIN, speedMax);
+  // }
+  // stop();
+  // // Едем до повора налево
+  // while(lineSensorL != 0 && lineSensorR != 1) {
+  //   readSensor();
+  //   drivingAlongTheLine();
+  // }
+  // stop();
+  // // Поворачиваем налево (в 4ую комнату)
+  // while(lineSensorR != 0) {
+  //   readSensor();
+  //   setMotorSpeed(motorLeft_PWM_PIN, motorLeft_DIR_PIN, 0);
+  //   setMotorSpeed(motorRight_PWM_PIN, motorRight_DIR_PIN, speedMax);
+  // }
+  // while(lineSensorR != 1) {
+  //   readSensor();
+  //   setMotorSpeed(motorLeft_PWM_PIN, motorLeft_DIR_PIN, 0);
+  //   setMotorSpeed(motorRight_PWM_PIN, motorRight_DIR_PIN, speedMax);
+  // }
+  // while(lineSensorRC != 0) {
+  //   readSensor();
+  //   setMotorSpeed(motorLeft_PWM_PIN, motorLeft_DIR_PIN, 0);
+  //   setMotorSpeed(motorRight_PWM_PIN, motorRight_DIR_PIN, speedMax);
+  // }
+  // stop();
+  // // Проезжаем зону старта 4ой комнаты
+  // while(lineSensorL != 0 && lineSensorR != 0) {
+  //   readSensor();
+  //   drivingAlongTheLine();
+  // }
+  // while(lineSensorL != 1 && lineSensorR != 1) {
+  //   readSensor();
+  //   drivingAlongTheLine();
+  // }
+  // while(lineSensorL != 0 && lineSensorR != 0) {
+  //   readSensor();
+  //   drivingAlongTheLine();
+  // }
+  // while(lineSensorL != 1 && lineSensorR != 1) {
+  //   readSensor();
+  //   drivingAlongTheLine();
+  // }
+  // // Едем до поворота направо
+  // while(lineSensorL != 1 && lineSensorR != 0) {
+  //   readSensor();
+  //   drivingAlongTheLine();
+  // }
+  // stop();
+  // // Поворачиваем направо
+  // while(lineSensorL != 0) {
+  //   readSensor();
+  //   setMotorSpeed(motorLeft_PWM_PIN, motorLeft_DIR_PIN, speedMax);
+  //   setMotorSpeed(motorRight_PWM_PIN, motorRight_DIR_PIN, 0);
+  // }
+  // while(lineSensorRC != 1) {
+  //   readSensor();
+  //   setMotorSpeed(motorLeft_PWM_PIN, motorLeft_DIR_PIN, 0);
+  //   setMotorSpeed(motorRight_PWM_PIN, motorRight_DIR_PIN, speedMax);
+  // }
+  // stop();
+  // // Едем до поворота налево
+  // while(lineSensorL != 0 && lineSensorR != 1) {
+  //   readSensor();
+  //   drivingAlongTheLine();
+  // }
+  // stop();
+  // // Поворачиваем налево
+  // while(lineSensorR != 0) {
+  //   readSensor();
+  //   setMotorSpeed(motorLeft_PWM_PIN, motorLeft_DIR_PIN, 0);
+  //   setMotorSpeed(motorRight_PWM_PIN, motorRight_DIR_PIN, speedMax);
+  // }
+  // while(lineSensorLC != 1) {
+  //   readSensor();
+  //   setMotorSpeed(motorLeft_PWM_PIN, motorLeft_DIR_PIN, speedMax);
+  //   setMotorSpeed(motorRight_PWM_PIN, motorRight_DIR_PIN, 0);
+  // }
+  // stop();
+  // // Проезжаем перекресток
+  // while(lineSensorL != 0 && lineSensorR != 0) {
+  //   readSensor();
+  //   drivingAlongTheLine();
+  // }
+  // while(lineSensorL != 1 && lineSensorR != 1) {
+  //   readSensor();
+  //   drivingAlongTheLine();
+  // }
+  // stop();
+  // // Подъезаем к зоне выгрузки
+  // while(lineSensorLC != 1 && lineSensorC != 1 && lineSensorRC != 1) {
+  //   readSensor();
+  //   drivingAlongTheLine();
+  // }
+  // stop();
+  // setMotorSpeed(motorLeft_PWM_PIN, motorLeft_DIR_PIN, speedMax);
+  // setMotorSpeed(motorRight_PWM_PIN, motorRight_DIR_PIN, 0);
+  // delay(800);
+  // stop();
+  // putBank();
+  // delay(500);
+  // setMotorSpeed(motorLeft_PWM_PIN, motorLeft_DIR_PIN, -speedMax);
+  // setMotorSpeed(motorRight_PWM_PIN, motorRight_DIR_PIN, 0);
+  // delay(800);
+  // stop();
+
+}
+void toStart() {
+  if (lineSensorL == 0 && lineSensorC == 0 && lineSensorR == 0) {
+    setMotorSpeed(motorLeft_PWM_PIN, motorLeft_DIR_PIN, speedMidle);
+    setMotorSpeed(motorRight_PWM_PIN, motorRight_DIR_PIN, speedMidle);
+    delay(800);
+    stop();
+    putBank();
+    _toStart = false;
+  }
+  else {
+    drivingAlongTheLine();
+  }
 }
 // Обработчик событий
 void loop() {
   readSensor();
   // printSensorValue();
   distance = distanceSensor.ping_cm();
-  Serial.println(distance);
- 
+  
   if (_start == true) {
     start();
   }
@@ -301,14 +519,21 @@ void loop() {
   if (_room_1_step_1 == true) {
     room_1_step_1();
   }
-  if (_exit_room_1_step_1 == true) {
-    exit_room_1_step_1();
+  if (_room_1_step_1_exit == true) {
+    room_1_step_1_exit();
   }
-  if (_road_Room_1_To_Road_4_step_1 == true) {
-    road_Room_1_To_Road_4_step_1();
+  if (_room_1_step_2 == true) {
+    room_1_step_2();
+  }
+  if (_room_1_step_2_exit == true) {
+    room_1_step_2_exit();
+  }
+  if (_toStart == true) {
+    toStart();
   }
 
 }
 
 // void yield() {
+
 // }
